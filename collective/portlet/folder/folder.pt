@@ -1,0 +1,63 @@
+<section class="portlet portletCollection"
+    i18n:domain="plone"
+    tal:define="folder_url view/folder_url;
+                plone_view context/@@plone;
+                toLocalizedTime nocall:plone_view/toLocalizedTime;
+                viewActions python:context.portal_registry.get('plone.types_use_view_action_in_listings', []);"
+    tal:attributes="class string:portlet portletCollection ${view/css_class}"><header class="portletHeader">
+        <span class="portletTopLeft"></span>
+        <a tal:attributes="href folder_url" tal:omit-tag="not:view/data/show_more">
+            <span tal:content="view/data/header" />
+        </a>
+        <span class="portletTopRight"></span>
+  </header>
+
+
+  <ul class="portletContent">
+    <tal:events tal:repeat="obj view/results">
+    <li class="portletItem"
+        tal:define="plone_view context/@@plone;
+                    oddrow repeat/obj/odd;
+                    useView python:obj.portal_type in viewActions;
+                    itemUrl python:useView and obj.getURL() + '/view' or obj.getURL();
+                    item_wf_state obj/review_state;
+                    item_wf_state_class python:'state-' + plone_view.normalizeString(item_wf_state);
+                    item_type obj/portal_type;
+                    item_type_class python:'contenttype-' + plone_view.normalizeString(item_type);"
+        tal:attributes="class python:oddrow and 'portletItem even' or 'portletItem odd'">
+        <a href="#"
+           tal:attributes="href itemUrl;
+                           class  string:tile $item_type_class $item_wf_state_class;
+                           title obj/Description">
+            <img class="image-icon"
+               tal:define="thumb python:obj.getURL()+'/@@images/image/icon'"
+               tal:condition=" obj/getIcon"
+               tal:attributes="href obj/getURL;
+                               src  string:$thumb;">
+            <span tal:replace="obj/Title">
+             Title </span>
+            <span class="portletItemDetails"
+                  tal:condition="view/data/show_dates"
+                  tal:define="obj_date obj/Date"
+                  tal:content="python:toLocalizedTime(obj_date)">
+                Date
+            </span>
+        </a>
+    </li>
+    </tal:events>
+  </ul>
+
+    <footer class="portletFooter"
+            tal:condition="python:showMore or view.include_empty_footer()"
+            tal:define="showMore view/data/show_more">
+        <span class="portletBottomLeft"></span>
+        <span tal:condition="showMore">
+        <a tal:attributes="href folder_url">
+           <span class="hiddenStructure"><span tal:replace="view/data/header" /> - </span>
+           <span i18n:translate="more_url">More&hellip;</span>
+        </a>
+        </span>
+        <span class="portletBottomRight"></span>
+  </footer>
+
+</section>
