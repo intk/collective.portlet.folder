@@ -2,6 +2,6 @@
 <metadata>
  <version>1000</version>
  <dependencies>
-   <dependency>profile-collective.portlet.folder:default</dependency>
+   <dependency>profile-collective.portlet.foldercontents:default</dependency>
  </dependencies>
 </metadata>

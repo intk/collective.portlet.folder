@@ -1,4 +1,7 @@
-recursive-include collective *
+include *.txt
+include *.rst
+
 recursive-include docs *
-include *
+recursive-include collective *
+
 global-exclude *.pyc

@@ -10,9 +10,11 @@
         initialize=".initialize"
         />
 
+    <include package=".behaviors" />
+
     <genericsetup:registerProfile
        name="default"
-       title="Folder portlet"
+       title="collective.portlet.foldercontents Folder contents portlet"
        directory="profiles/default"
        description="A simple portlet that displays the results of a folder object"
        provides="Products.GenericSetup.interfaces.EXTENSION"
@@ -20,7 +22,7 @@
 
      <!-- Register the portlet -->
      <plone:portlet
-         name="collective.portlet.folder.Folder"
+         name="collective.portlet.foldercontents.Folder"
          interface=".folder.IFolderPortlet"
          assignment=".folder.Assignment"
          view_permission="zope2.View"

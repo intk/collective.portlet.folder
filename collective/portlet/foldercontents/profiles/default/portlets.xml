@@ -6,8 +6,8 @@
  <!-- Portlet type registrations -->
 
  <portlet
-   addview="collective.portlet.folder.Folder"
-   title="Folder portlet"
+   addview="collective.portlet.foldercontents.Folder"
+   title="Folder contents portlet"
    description="A portlet which displays the contents of a folder"
    i18n:attributes="title;
                     description"

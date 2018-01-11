@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
-version = '0.0.1'
+version = '0.0.2'
 
-setup(name='collective.portlet.folder',
+setup(name='collective.portlet.foldercontents',
       version=version,
       description="A portlet that fetches results from a folder",
       long_description=open("README.rst").read() + "\n" +
@@ -18,7 +18,7 @@ setup(name='collective.portlet.folder',
           "Programming Language :: Python",
           "Programming Language :: Python :: 2.7",
       ],
-      keywords='folder portlet',
+      keywords='folder contents portlet',
       author='INTK',
       author_email='andre@intk.com',
       url='https://github.com/intk/collective.portlet.folder',
@@ -39,5 +39,9 @@ setup(name='collective.portlet.folder',
               'plone.app.testing',
               'plone.app.contenttypes',
           ],
-      }
+      },
+      entry_points="""
+      [z3c.autoinclude.plugin]
+      target = plone
+      """
       )

@@ -11,8 +11,15 @@
         </a>
         <span class="portletTopRight"></span>
   </header>
+  
 
-
+  <style>
+    body#visual-portal-wrapper.pat-plone .outer-wrapper .contenttype-file:before {
+      content: '\f016' !important;
+      font-family: 'fontawesome' !important;
+    }
+  </style>
+  
   <ul class="portletContent">
     <tal:events tal:repeat="obj view/results">
     <li class="portletItem"
