@@ -38,9 +38,6 @@ def createPortlet(uid):
                 exclude_context=False)
     except:
         pass
-
-    print "Portlet is created"
-    print portlet
     return portlet
 
 def addPortletToContext(context, portlet, columnName="plone.rightcolumn"):
@@ -51,8 +48,6 @@ def addPortletToContext(context, portlet, columnName="plone.rightcolumn"):
     manager = getMultiAdapter((context, column), IPortletAssignmentMapping)
     chooser = INameChooser(manager)
     manager[chooser.chooseName(None, portlet)] = portlet
-
-    print "Added portlet"
 
 def newObjectAdded(obj, event):
     if IDownloads.providedBy(obj):

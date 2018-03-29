@@ -15,6 +15,11 @@ from zope import schema
 from zope.component import getUtility
 from zope.interface import implementer
 import random
+from plone.app.uuid.utils import uuidToCatalogBrain
+from plone.app.event.browser.formatted_date import FormattedDateProvider
+from zope.contentprovider.interfaces import IContentProvider
+from plone.event.interfaces import IEvent
+from zope.component import getMultiAdapter
 
 COLLECTIONS = []
 
@@ -83,6 +88,19 @@ class IFolderPortlet(IPortletDataProvider):
         required=True,
         default=True)
 
+    archive_images = schema.Bool(
+        title=_(u"Activate archive images style"),
+        description=_(u"If enabled, the images will be rendered with the archive style"),
+        required=False,
+        default=False)
+
+    start_from = schema.Int(
+        title=_(u"Item in the folder to start showing the archive"),
+        description=_(u"Item in the folder to start showing the archive"),
+        required=False)
+
+
+
 
 @implementer(IFolderPortlet)
 class Assignment(base.Assignment):
@@ -98,13 +116,15 @@ class Assignment(base.Assignment):
     show_more = True
     show_dates = False
     exclude_context = False
+    archive_images = False
+    start_from = None
 
     # bbb
     target_folder = None
 
     def __init__(self, header=u"", uid=None, limit=None,
                  random=False, show_more=True, show_dates=False,
-                 exclude_context=True):
+                 exclude_context=True, archive_images=False, start_from=None):
         self.header = header
         self.uid = uid
         self.limit = limit
@@ -112,6 +132,8 @@ class Assignment(base.Assignment):
         self.show_more = show_more
         self.show_dates = show_dates
         self.exclude_context = exclude_context
+        self.archive_images = archive_images
+        self.start_from = start_from
 
     @property
     def title(self):
@@ -155,6 +177,233 @@ class Renderer(base.Renderer):
             folder = parent
         return folder.absolute_url()
 
+    def show_archive(self):
+        return self.data.archive_images
+
+    def find_orientation(self, item):
+        if type(item) == str:
+            if item == "L":
+                return "landscape"
+            else:
+                return "portrait"
+
+        item_class = ""
+        if item.portal_type == "Image":
+            image_obj = item.getObject()
+            if getattr(image_obj, 'image', None):
+                try:
+                    w, h = image_obj.image.getImageSize()
+                    if w > h:
+                        item_class = "%s" %('landscape')
+                    else:
+                        item_class = "%s" %('portrait')
+                except:
+                    return item_class
+        elif item.hasMedia:
+            image = uuidToCatalogBrain(item.leadMedia)
+            image_obj = image.getObject()
+            if getattr(image_obj, 'image', None):
+                try:
+                    w, h = image_obj.image.getImageSize()
+                    if w > h:
+                        item_class = "%s" %('landscape')
+                    else:
+                        item_class = "%s" %('portrait')
+                except:
+                    return item_class
+
+        return item_class
+
+    def getImageProperties(self, item):
+        link = item.getURL()+"/view"
+        title = item.Title
+        description = item.Description
+
+        try:
+            if item.portal_type == "Image":
+                image = item.getObject()
+                parent = image.aq_parent
+                if parent.portal_type == "Folder":
+                    if parent.id == "slideshow":
+                        obj = parent.aq_parent
+                        if obj.portal_type == "Object":
+                            title = obj.title
+                            description = obj.description
+                            link = obj.absolute_url()
+
+        except:
+            raise
+
+        return {"link": link, "title": title, "description": description}
+
+    def getImageClass(self, item, has_media=False):
+
+        item_class = "entry"
+
+        if item.portal_type == "Image":
+            image_obj = item.getObject()
+            if getattr(image_obj, 'image', None):
+                try:
+                    w, h = image_obj.image.getImageSize()
+                    if w > h:
+                        item_class = "%s %s" %(item_class, 'landscape')
+                    else:
+                        item_class = "%s %s" %(item_class, 'portrait')
+                except:
+                    return item_class
+        elif has_media:
+            image = uuidToCatalogBrain(item.leadMedia)
+            image_obj = image.getObject()
+            if getattr(image_obj, 'image', None):
+                try:
+                    w, h = image_obj.image.getImageSize()
+                    if w > h:
+                        item_class = "%s %s" %(item_class, 'landscape')
+                    else:
+                        item_class = "%s %s" %(item_class, 'portrait')
+                except:
+                    return item_class
+
+        return item_class
+        
+    def pairItems(self, results):
+        # L P L L L P P P
+        TEST_INPUT = ["L", "P", "L", "L", "L", "P", "P", "P"]
+        FIRST_ITEM = 0
+        
+        items = results
+        total_items = len(items)
+        items_checked = []
+        final_patterns = []
+
+        right = True
+        previous_pair = ""
+
+        for i in range(total_items):
+            if i not in items_checked:
+
+                right_pattern = "right" if right else "left"
+                pattern = {
+                    "size": "small",
+                    "orientation": self.find_orientation(items[i]),
+                    "position": "pair",
+                    "clearfix": False,
+                    "item": items[i],
+                    "right": right_pattern,
+                    "bottom": ""
+                }
+               
+                if i == FIRST_ITEM:
+                    pattern['position'] = "single"
+                    pattern['size'] = "big"
+                    final_patterns.append(pattern)
+                    items_checked.append(i)
+                    if right:
+                        right = False
+                    else:
+                        right = True
+                else:
+                    if i+1 < total_items:
+                        next_orientation = self.find_orientation(items[i+1])
+
+                        if next_orientation == pattern["orientation"] == "landscape":
+                            pattern["position"] = "single"
+                            pattern["size"] = "big"
+                            final_patterns.append(pattern)
+                            if right:
+                                right = False
+                            else:
+                                right = True
+
+                            previous_pair = ""
+                        else:
+                            new_pattern = {
+                                "size": pattern['size'],
+                                "orientation": pattern['orientation'],
+                                "position": "pair",
+                                "clearfix": True,
+                                "item": items[i+1],
+                                "right": pattern['right'],
+                                "bottom": pattern['bottom']
+                            }
+                            new_pattern["orientation"] = next_orientation
+
+                            if next_orientation == pattern['orientation'] == "portrait":
+                                pattern['size'] = "big"
+                                new_pattern['size'] = "big"
+
+                            if not previous_pair:
+                                if right:
+                                    pattern['bottom'] = "bottom"
+                                    new_pattern['bottom'] = "up"
+                                else:
+                                    new_pattern['bottom'] = "bottom"
+                                    pattern['bottom'] = "up"
+                            else:
+                                if previous_pair == "bottom":
+                                    pattern['bottom'] = "up"
+                                    new_pattern['bottom'] = "bottom"
+                                    previous_pair = "bottom"
+                                else:
+                                    pattern['bottom'] = "bottom"
+                                    new_pattern['bottom'] = "up"
+                                    previous_pair = "up"
+
+                            final_patterns.append(pattern)
+                            final_patterns.append(new_pattern)
+                            items_checked.append(i)
+                            items_checked.append(i+1)
+                    else:
+                        pattern['position'] = "single"
+                        pattern['size'] = "big"
+                        final_patterns.append(pattern)
+            else:
+                pass
+
+        return final_patterns
+
+    def getImageObject(self, item):
+        if item.portal_type == "Image":
+            return item.getURL()+"/@@images/image/mini"
+        if item.leadMedia != None:
+            uuid = item.leadMedia
+            media_object = uuidToCatalogBrain(uuid)
+            if media_object:
+                return media_object.getURL()+"/@@images/image/mini"
+            else:
+                return None
+        else:
+            return None
+
+    def getImageScale(self, item, scale="large"):
+        if item.portal_type == "Image":
+            return item.getURL()+"/@@images/image/%s" %(scale)
+        if getattr(item, 'leadMedia', None) != None:
+            uuid = item.leadMedia
+            media_object = uuidToCatalogBrain(uuid)
+            if media_object:
+                return media_object.getURL()+"/@@images/image/%s" %(scale)
+            else:
+                return None
+        else:
+            return None
+
+    def is_event(self, obj):
+        if getattr(obj, 'getObject', False):
+            obj = obj.getObject()
+        return IEvent.providedBy(obj)
+
+    def formatted_date(self, obj):
+        item = obj.getObject()
+        provider = getMultiAdapter(
+            (self.context, self.request, self),
+            IContentProvider, name='formatted_date'
+        )
+        return provider(item)
+
+    def date_speller(self, date):
+        return date_speller(self.context, date)
+
     def css_class(self):
         header = self.data.header
         normalizer = getUtility(IIDNormalizer)
@@ -174,16 +423,24 @@ class Renderer(base.Renderer):
             context_path = '/'.join(self.context.getPhysicalPath())
             exclude_context = getattr(self.data, 'exclude_context', False)
             limit = self.data.limit
+            start_from = self.data.start_from
             if limit and limit > 0:
                 # pass on batching hints to the catalog
                 results = folder.getFolderContents()
                 results = results._sequence
             else:
                 results = folder.getFolderContents()
+
             if exclude_context:
                 results = [
                     brain for brain in results
                     if brain.getPath() != context_path]
+            
+            if start_from and start_from > 0:
+                try:
+                    results = results[start_from:len(results)-1]
+                except:
+                    raise
             if limit and limit > 0:
                 results = results[:limit]
         return results
