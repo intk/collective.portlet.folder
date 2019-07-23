@@ -14,16 +14,16 @@
 
     <genericsetup:registerProfile
        name="default"
-       title="collective.portlet.foldercontents Folder contents portlet"
+       title="collective.portlet.foldercontents Search results portlet"
        directory="profiles/default"
-       description="A simple portlet that displays the results of a folder object"
+       description="A simple portlet that displays the results of search index"
        provides="Products.GenericSetup.interfaces.EXTENSION"
        />
 
      <!-- Register the portlet -->
      <plone:portlet
-         name="collective.portlet.foldercontents.Folder"
-         interface=".folder.IFolderPortlet"
+         name="collective.portlet.foldercontents.SearchResults"
+         interface=".folder.ISearchResultsPortlet"
          assignment=".folder.Assignment"
          view_permission="zope2.View"
          renderer=".folder.Renderer"

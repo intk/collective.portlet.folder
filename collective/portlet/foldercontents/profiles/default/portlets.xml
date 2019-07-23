@@ -6,9 +6,9 @@
  <!-- Portlet type registrations -->
 
  <portlet
-   addview="collective.portlet.foldercontents.Folder"
-   title="Folder contents portlet"
-   description="A portlet which displays the contents of a folder"
+   addview="collective.portlet.foldercontents.SearchResults"
+   title="Search results portlet"
+   description="A portlet which displays the results of a search index"
    i18n:attributes="title;
                     description"
    />
